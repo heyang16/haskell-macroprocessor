@@ -5,10 +5,11 @@ import IC.TestSuite
 import MP hiding (main)
 
 lookUpTestCases
-  = [ ("A", [("A", 8), ("B",9), ("C",5), ("A",7)]) ==> [8,7]
+  = [ ("A", [("A", 8), ("B", 9), ("C", 5), ("A", 7)]) ==> [8,7]
     , ("a", []) ==> []
     , ("a", [("a", 9)]) ==> [9]
     , ("a", [("b", 9)]) ==> []
+    , ("", [("a", 8)]) ==> []
     ]
 
 splitTextTestCases
