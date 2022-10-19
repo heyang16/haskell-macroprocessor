@@ -38,6 +38,7 @@ splitText seps (c : cs)
 -- that when concatenated will rebuild the original string.
 combine :: String -> [String] -> [String]
 combine "" s = s
+combine k [] = []
 combine k [""] = [k]
 combine (k:ks) (s:ss)
   = s : [k] : combine ks ss
@@ -52,17 +53,7 @@ getKeywordDefs (line:lines)
     (seps, key) = splitText " " line
     (kw : kv) = key -- c1 is the keyword, and c2 is the keyword value, but broken up in a list
     combinedkv = concat (combine ss kv) -- concatenate the remaining words to form the whole keyword value
-    ss = if null seps then "" else tail seps -- avoids tailing an empty string
-
--- takes the contents of a text file and an info file and combines them using the above functions 
--- to build a string representing the output file by replacing keywords with key values
-expand :: FileContents -> FileContents -> FileContents
-expand ori keystring
-  = concat (combine sep replaced_words)
-  where 
-    (sep, ori_wordlist) = splitText separators ori -- split original text file into words
-    keywords = getKeywordDefs(snd(splitText "\n" keystring)) --get keywords from the keyword file
-    replaced_words = [replaceWord ori_word keywords | ori_word <- ori_wordlist] --replace keywords with key values
+    ss = if null seps then "" else tail seps -- avoids tailing an empty string, results in ["", ""]
 
 -- replaces a word by a key value given the word and a list of keyword - key value pairs
 -- if the word does not match any keywords, it stays the same
@@ -70,7 +61,30 @@ replaceWord :: String -> KeywordDefs -> String
 replaceWord ori keydefs 
   = if null replaced then ori else head replaced -- if the keyword appears multiple times, take the first occurence
   where
-    replaced = lookUp ori keydefs 
+    replaced = lookUp ori keydefs
+
+-- Given an original string and a string containing a keyword dictionary, replace the keywords in the original
+-- string with the corresponding key values
+replaceKeywords :: String -> String -> String
+replaceKeywords ori keydict
+  = concat (combine sep replaced_words)
+  where
+    (sep, ori_wordList) = splitText separators ori -- split original text file into words
+    keys = getKeywordDefs(snd(splitText "\n" keydict)) --get keywords and key values from a string
+    replaced_words = [replaceWord ori_word keys | ori_word <- ori_wordList] --replace keywords with key values
+ 
+-- takes the contents of a text file and an info file and combines them using the above functions 
+-- to build a string representing the output file by replacing keywords with key values
+-- given multiple versions of key dictionaries, print each version with a newline containing -----
+expand :: FileContents -> FileContents -> FileContents
+expand ori keystring
+  = concat versions -- Combine the different versions of output text
+  where 
+    keydicts = snd(splitText "#" keystring) -- get the list of different key dictionaries
+    versions = [replaceKeywords ori keydict ++ "\n-----\n"| keydict <- keydicts]
+    -- creates a list of different versions in which the original message can be expanded based on
+    -- the different key dictionaries given
+
 -----------------------------------------------------
 
 -- The provided main program which uses your functions to merge a
